@@ -367,8 +367,15 @@
           usdc.balanceOf(walletAddress),
           usdc.balanceOf(contractAddress),
         ]);
-        document.getElementById("walletBalance").textContent = fmt(ethers.utils.formatUnits(balance, decimals), 6);
-        document.getElementById("contractBalance").textContent = fmt(ethers.utils.formatUnits(contractBal, decimals), 6);
+       document.getElementById("walletBalance").textContent = fmt(Number(ethers.utils.formatUnits(balance, decimals)), 6);
+const contractBalanceNum = Number(ethers.utils.formatUnits(contractBal, decimals));
+document.getElementById("contractBalance").textContent = fmt(contractBalanceNum, 6);
+
+// Optional: update accumulatedProfit display if needed
+if (contractBalanceNum > 0 && document.getElementById("accumulateToggle").checked) {
+    accumulatedProfit = contractBalanceNum;
+    document.getElementById("accumulatedProfit").textContent = fmt(accumulatedProfit, 6);
+}
       } catch (error) {
         log(`⚠️ Balance update failed: ${error.message}`);
       }

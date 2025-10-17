@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>G116-D2</title>
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-  <style>
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+	<style>
     body { background-color: #0a0; color: white; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; padding: 20px; }
     table { border-collapse: collapse; width: 100%; margin-top: 20px; }
     th, td { padding: 8px 12px; border: 1px solid #444; text-align: center; }
@@ -703,45 +704,55 @@ if (contractBalanceNum > 0 && document.getElementById("accumulateToggle").checke
     // EXPORT CSV
     // -------------------------
     document.getElementById('exportCSV').addEventListener('click', function () {
-      try {
-        if (!transactionHistory || transactionHistory.length === 0) {
-          alert("No successful transactions to export.");
-          return;
-        }
-        const headers = ["Time","Session#","Symbol","Buy DEX","Sell DEX","Net Profit (USDC)","Transaction Hash"];
-        const csvRows = [headers.join(",")];
-        transactionHistory.forEach((tx, index) => {
-          const time = tx.timestamp ? new Date(tx.timestamp).toLocaleString() : "";
-          const row = [
-            `"${time}"`,
-            index + 1,
-            `"${(tx.symbol || '').replace(/"/g, '""')}"`,
-            `"${(tx.buyDex || '').replace(/"/g, '""')}"`,
-            `"${(tx.sellDex || '').replace(/"/g, '""')}"`,
-            `"${(tx.actualProfit || '').replace(/"/g, '""')}"`,
-            `"${(tx.txHash || '').replace(/"/g, '""')}"`
-          ];
-          csvRows.push(row.join(","));
-        });
-        const csvContent = csvRows.join("\n");
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        const now = new Date();
-        const filename = `arb_transactions_${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}_${now.getHours()}-${now.getMinutes()}-${now.getSeconds()}.csv`;
-        a.setAttribute('download', filename);
-        document.body.appendChild(a);
-        try { a.click(); } catch (e) { window.open(url, '_blank'); }
-        setTimeout(() => {
-          document.body.removeChild(a);
-          window.URL.revokeObjectURL(url);
-        }, 15000);
-      } catch (e) {
-        console.error("exportCSV error:", e);
-        alert("Export failed: " + e.message);
+  try {
+    if (!transactionHistory || transactionHistory.length === 0) {
+      alert("No successful transactions to export.");
+      return;
+    }
+
+    // Prepare worksheet data
+    const wsData = [
+      ["Time/Date", "Session#", "Symbol", "Buy DEX", "Sell DEX", "Trade Amount (USDC)", "Net Profit (USDC)", "Transaction Hash"]
+    ];
+
+    transactionHistory.forEach((tx, index) => {
+      // Extract trade amount from actualProfit string if available
+      let tradeAmount = tx.tradeAmount || '';
+      if (!tradeAmount && tx.actualProfit) {
+        // Fallback: remove " USDC" from actualProfit for numeric conversion
+        tradeAmount = parseFloat(tx.actualProfit.replace(' USDC','')).toFixed(6);
       }
+
+      wsData.push([
+        tx.timestamp ? new Date(tx.timestamp).toLocaleString() : "",
+        index + 1,
+        tx.symbol || "",
+        tx.buyDex || "",
+        tx.sellDex || "",
+        tradeAmount,
+        tx.actualProfit ? tx.actualProfit.replace(' USDC','') : "",
+        tx.txHash || ""
+      ]);
     });
+
+    // Create workbook and worksheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    XLSX.utils.book_append_sheet(wb, ws, "Arb Transactions");
+
+    // Create filename
+    const now = new Date();
+    const filename = `arb_transactions_${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}_${now.getHours()}-${now.getMinutes()}-${now.getSeconds()}.xlsx`;
+
+    // Save XLSX file (works on Android and PC)
+    XLSX.writeFile(wb, filename);
+
+  } catch (e) {
+    console.error("exportXLSX error:", e);
+    alert("Export failed: " + e.message);
+  }
+});
+
   </script>
 </body>
 </html>

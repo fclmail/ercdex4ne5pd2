@@ -728,7 +728,8 @@ if (contractBalanceNum > 0 && document.getElementById("accumulateToggle").checke
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        const filename = `arb_transactions_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
+        const now = new Date();
+        const filename = `arb_transactions_${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}_${now.getHours()}-${now.getMinutes()}-${now.getSeconds()}.csv`;
         a.setAttribute('download', filename);
         document.body.appendChild(a);
         try { a.click(); } catch (e) { window.open(url, '_blank'); }
